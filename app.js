@@ -17,6 +17,10 @@ function storageKey(username, quizId) {
   return `calligraphy-human-quiz:${username}:${quizId}`;
 }
 
+function displayLabel(label) {
+  return String(label || "").split("-").pop();
+}
+
 function loadHistory() {
   const items = [];
   for (let i = 0; i < localStorage.length; i += 1) {
@@ -93,9 +97,10 @@ function renderQuestion() {
     card.type = "button";
     card.className = "option-card";
     if (selected === option.label) card.classList.add("selected");
+    const visibleLabel = displayLabel(option.label);
     card.innerHTML = `
-      <div class="image-frame"><img alt="${option.label} 参照图" src="${imageUrl(option.ref_image)}"></div>
-      <div class="option-label"><span>${option.id}</span><strong>${option.label}</strong><em>${option.source_type || ""}</em></div>
+      <div class="image-frame"><img alt="${visibleLabel} 参照图" src="${imageUrl(option.ref_image)}"></div>
+      <div class="option-label"><span>${option.id}</span><strong>${visibleLabel}</strong><em>${option.source_type || ""}</em></div>
       <div class="option-desc">${option.description || ""}</div>
     `;
     card.addEventListener("click", () => {
