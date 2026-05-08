@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#fffdf8">
+    <title>书法 8 选 1 手机测评</title>
+    <link rel="stylesheet" href="mobile.css">
+  </head>
+  <body>
+    <main class="app">
+      <section id="startView" class="start-view">
+        <div class="brand">
+          <p>手机测评平台</p>
+          <h1>书法 8 选 1</h1>
+        </div>
+        <form id="startForm" class="start-form">
+          <label>
+            用户名
+            <input id="username" name="username" autocomplete="name" required placeholder="请输入用户名">
+          </label>
+          <label>
+            选择题库
+            <select id="quizSelect" name="quiz" required></select>
+          </label>
+          <button type="submit">开始做题</button>
+        </form>
+        <div id="historyPanel" class="history-panel"></div>
+      </section>
+
+      <section id="quizView" class="quiz-view hidden">
+        <header class="topbar">
+          <div class="quiz-heading">
+            <strong id="quizTitle"></strong>
+            <span id="userBadge"></span>
+          </div>
+          <div class="progress">
+            <span id="progressText"></span>
+            <span id="accuracyText"></span>
+          </div>
+        </header>
+
+        <section class="question-layout">
+          <aside class="target-panel">
+            <div class="panel-title">
+              <span>目标图</span>
+              <span id="questionMeta" class="question-meta"></span>
+            </div>
+            <div class="image-frame target-frame">
+              <img id="targetImage" alt="目标书法图片">
+            </div>
+          </aside>
+
+          <section class="options-panel">
+            <div class="panel-title">候选参照</div>
+            <div id="optionsGrid" class="options-grid"></div>
+          </section>
+        </section>
+
+        <footer class="controls">
+          <button id="prevBtn" type="button">上一题</button>
+          <button id="nextBtn" type="button">下一题</button>
+          <button id="finishBtn" type="button">提交并保存</button>
+        </footer>
+      </section>
+
+      <section id="resultView" class="result-view hidden">
+        <h2>完成</h2>
+        <p id="resultSummary"></p>
+        <div class="result-actions">
+          <button id="downloadBtn" type="button">导出 CSV</button>
+          <button id="restartBtn" type="button">返回选题</button>
+        </div>
+      </section>
+    </main>
+    <script src="mobile.js"></script>
+  </body>
+</html>
