@@ -12,16 +12,26 @@
         <div class="brand">
           <p>人工测评平台</p>
           <h1>书法 8 选 1</h1>
+          <div class="intro">
+            <p>本平台用于人工判断书法单字图片最接近的作者与书体。系统会按参与者顺序自动分配题库，作答者只需填写用户名并选择作答模式。</p>
+          </div>
         </div>
         <form id="startForm" class="start-form">
           <label>
             用户名
             <input id="username" name="username" autocomplete="name" required placeholder="请输入用户名">
           </label>
-          <label>
-            选择题库
-            <select id="quizSelect" name="quiz" required></select>
-          </label>
+          <fieldset class="mode-field">
+            <legend>作答模式</legend>
+            <label>
+              <input type="radio" name="hintMode" value="with_hint" checked>
+              <span>有提示</span>
+            </label>
+            <label>
+              <input type="radio" name="hintMode" value="image_only">
+              <span>仅图片</span>
+            </label>
+          </fieldset>
           <button type="submit">开始做题</button>
         </form>
         <div id="historyPanel" class="history-panel"></div>
@@ -35,7 +45,7 @@
           </div>
           <div class="progress">
             <span id="progressText"></span>
-            <span id="accuracyText"></span>
+            <span id="modeText"></span>
           </div>
         </header>
 
@@ -65,7 +75,7 @@
         <p id="resultSummary"></p>
         <div class="result-actions">
           <button id="downloadBtn" type="button">导出 CSV</button>
-          <button id="restartBtn" type="button">返回选题</button>
+          <button id="restartBtn" type="button">返回首页</button>
         </div>
       </section>
     </main>

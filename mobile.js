@@ -2,6 +2,8 @@ const state = {
   data: null,
   quiz: null,
   username: "",
+  hintMode: "with_hint",
+  assignment: null,
   current: 0,
   answers: {},
   savedRecord: null,
@@ -19,6 +21,10 @@ function storageKey(username, quizId) {
 
 function displayLabel(label) {
   return String(label || "").split("-").pop();
+}
+
+function hintModeLabel(mode) {
+  return mode === "image_only" ? "仅图片" : "有提示";
 }
 
 function loadHistory() {
@@ -42,20 +48,24 @@ function loadHistory() {
   const list = panel.querySelector("ul");
   for (const item of items.slice(0, 8)) {
     const li = document.createElement("li");
-    li.textContent = `${item.username} / ${item.quiz_name || item.quiz_id}: ${item.correct}/${item.total} (${Math.round(item.accuracy * 100)}%)`;
+    li.textContent = `${item.username} / ${item.quiz_name || item.quiz_id} / ${item.hint_mode_label || hintModeLabel(item.hint_mode)}：${item.total} 题`;
     list.appendChild(li);
   }
 }
 
-function populateQuizSelect() {
-  const select = $("quizSelect");
-  select.innerHTML = "";
-  for (const quiz of state.data.quizzes) {
-    const option = document.createElement("option");
-    option.value = quiz.id;
-    option.textContent = `${quiz.name} (${quiz.question_count}题)`;
-    select.appendChild(option);
-  }
+function selectedHintMode() {
+  return document.querySelector("input[name='hintMode']:checked")?.value || "with_hint";
+}
+
+async function fetchAssignment(username, hintMode) {
+  const response = await fetch("/api/assignment", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username, hint_mode: hintMode }),
+  });
+  if (!response.ok) throw new Error("题库分配失败");
+  const data = await response.json();
+  return data.assignment;
 }
 
 function getAnsweredList() {
@@ -75,19 +85,19 @@ function getAnsweredList() {
 
 function updateProgress() {
   const answered = Object.keys(state.answers).length;
-  const rows = getAnsweredList().filter((row) => row.selected_label);
-  const correct = rows.filter((row) => row.is_correct).length;
   $("progressText").textContent = `${state.current + 1}/${state.quiz.questions.length}  已答 ${answered}`;
-  $("accuracyText").textContent = answered ? `准确率 ${Math.round((correct / answered) * 100)}%` : "准确率 0%";
+  $("modeText").textContent = hintModeLabel(state.hintMode);
   $("prevBtn").disabled = state.current === 0;
   $("nextBtn").disabled = state.current === state.quiz.questions.length - 1;
 }
 
 function renderQuestion() {
   const question = state.quiz.questions[state.current];
-  $("quizTitle").textContent = state.quiz.name;
-  $("userBadge").textContent = `${question.source_type || state.quiz.source_type || ""} / ${state.username}`;
-  $("questionMeta").textContent = [
+  const imageOnly = state.hintMode === "image_only";
+  $("quizView").classList.toggle("image-only", imageOnly);
+  $("quizTitle").textContent = "书法 8 选 1";
+  $("userBadge").textContent = state.username;
+  $("questionMeta").textContent = imageOnly ? "" : [
     question.char ? `字：${question.char}` : "",
     question.meta?.script_type || "",
     question.meta?.dynasty || "",
@@ -103,14 +113,16 @@ function renderQuestion() {
     card.className = "option-card";
     if (selected === option.label) card.classList.add("selected");
     const visibleLabel = displayLabel(option.label);
-    card.innerHTML = `
-      <div class="image-frame"><img alt="${visibleLabel} 参照图" src="${imageUrl(option.ref_image)}"></div>
-      <div class="option-label"><span>${option.id}</span><strong>${visibleLabel}</strong><em>${option.source_type || ""}</em></div>
-      <div class="option-desc">${option.description || ""}</div>
-    `;
+    card.innerHTML = imageOnly
+      ? `<div class="image-frame"><img alt="候选参照图" src="${imageUrl(option.ref_image)}"></div>`
+      : `
+        <div class="image-frame"><img alt="${visibleLabel} 参照图" src="${imageUrl(option.ref_image)}"></div>
+        <div class="option-label"><span>${option.id}</span><strong>${visibleLabel}</strong><em>${option.source_type || ""}</em></div>
+        <div class="option-desc">${option.description || ""}</div>
+      `;
     card.addEventListener("click", () => {
       state.answers[question.id] = option.label;
-      localStorage.setItem(storageKey(state.username, state.quiz.id), JSON.stringify(state.answers));
+      localStorage.setItem(storageKey(state.username, `${state.quiz.id}:${state.hintMode}`), JSON.stringify(state.answers));
       renderQuestion();
     });
     grid.appendChild(card);
@@ -118,13 +130,16 @@ function renderQuestion() {
   updateProgress();
 }
 
-function startQuiz(event) {
+async function startQuiz(event) {
   event.preventDefault();
   state.username = $("username").value.trim();
-  state.quiz = state.data.quizzes.find((quiz) => quiz.id === $("quizSelect").value);
+  state.hintMode = selectedHintMode();
+  state.assignment = await fetchAssignment(state.username, state.hintMode);
+  state.quiz = state.data.quizzes.find((quiz) => quiz.id === state.assignment.quiz_id);
+  if (!state.quiz) throw new Error("未找到后端分配的题库");
   state.current = 0;
   state.answers = {};
-  const saved = localStorage.getItem(storageKey(state.username, state.quiz.id));
+  const saved = localStorage.getItem(storageKey(state.username, `${state.quiz.id}:${state.hintMode}`));
   if (saved) {
     try {
       state.answers = JSON.parse(saved);
@@ -148,6 +163,9 @@ function finishQuiz() {
     username: state.username,
     quiz_id: state.quiz.id,
     quiz_name: state.quiz.name,
+    participant_order: state.assignment?.participant_order,
+    hint_mode: state.hintMode,
+    hint_mode_label: hintModeLabel(state.hintMode),
     total: answers.length,
     correct,
     accuracy: answers.length ? Number((correct / answers.length).toFixed(4)) : 0,
@@ -172,17 +190,19 @@ function showResult(record) {
   localStorage.setItem(`calligraphy-human-result:${record.username}:${record.quiz_id}:${Date.now()}`, JSON.stringify(record));
   $("quizView").classList.add("hidden");
   $("resultView").classList.remove("hidden");
-  $("resultSummary").textContent = `${record.username} 完成 ${record.quiz_name || record.quiz_id}：${record.correct}/${record.total}，准确率 ${Math.round(record.accuracy * 100)}%。`;
+  $("resultSummary").textContent = `${record.username} 已完成 ${record.total} 题，作答模式：${record.hint_mode_label || hintModeLabel(record.hint_mode)}。`;
 }
 
 function downloadCsv() {
   if (!state.savedRecord) return;
   const rows = [
-    ["username", "quiz_id", "quiz_name", "source_type", "index", "question_id", "target_image", "selected_label", "answer", "is_correct"],
+    ["username", "participant_order", "quiz_id", "quiz_name", "hint_mode", "source_type", "index", "question_id", "target_image", "selected_label", "answer", "is_correct"],
     ...state.savedRecord.answers.map((row) => [
       state.savedRecord.username,
+      state.savedRecord.participant_order || "",
       state.savedRecord.quiz_id,
       state.savedRecord.quiz_name,
+      state.savedRecord.hint_mode || "",
       row.source_type,
       row.index,
       row.question_id,
@@ -211,9 +231,12 @@ function restart() {
 async function boot() {
   const response = await fetch("data/quizzes.json");
   state.data = await response.json();
-  populateQuizSelect();
   loadHistory();
-  $("startForm").addEventListener("submit", startQuiz);
+  $("startForm").addEventListener("submit", (event) => {
+    startQuiz(event).catch((error) => {
+      alert(error.message);
+    });
+  });
   $("prevBtn").addEventListener("click", () => {
     state.current = Math.max(0, state.current - 1);
     renderQuestion();

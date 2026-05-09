@@ -75,6 +75,17 @@ button:disabled {
   letter-spacing: 0;
 }
 
+.intro {
+  margin-top: 20px;
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1.65;
+}
+
+.intro p {
+  margin: 0;
+}
+
 .start-form,
 .history-panel,
 .target-panel,
@@ -96,6 +107,37 @@ label {
   gap: 8px;
   color: var(--muted);
   font-weight: 700;
+}
+
+.mode-field {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.mode-field legend {
+  grid-column: 1 / -1;
+  margin-bottom: 8px;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.mode-field label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: white;
+}
+
+.mode-field input {
+  width: auto;
+  margin: 0;
 }
 
 input,
@@ -259,6 +301,15 @@ select {
   color: var(--muted);
   font-size: 13px;
   line-height: 1.45;
+}
+
+.image-only .option-card {
+  gap: 0;
+}
+
+.image-only .option-label,
+.image-only .option-desc {
+  display: none;
 }
 
 .controls,
